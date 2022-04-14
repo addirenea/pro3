@@ -2,6 +2,32 @@
 #include <stdlib.h>
 #include <string.h>
 
+// word count function from project 2
+int getWordCount(char *str) {
+
+    int prev_in_word = 0;
+    int wc = 0;
+
+    // loops through all charaters in str
+    while (*str)
+    {
+        // checks if character is whitespace
+        if (*str == ' ' || *str == '\t' || *str == '\n')
+            prev_in_word = 0;
+
+        // otherwise checks if prev character was whitespace
+        else if (prev_in_word == 0)
+        {
+            prev_in_word = 1;
+            wc++;
+        }
+
+        str++;
+    }
+
+    return wc;
+}
+
 
 void batchMode() {
 
@@ -13,30 +39,40 @@ void batchMode() {
 void interactiveMode() {
 
     size_t bufsize = 256;
-    size_t command_len;
-
     char *command = (char *)malloc(bufsize * sizeof(char));
 
+    while (1) {
 
-    // gets next line and removes newline character at end of string
-    printf("ccsh> ");
-    command_len = getline(&command, &bufsize, stdin);
-    if ((command)[command_len - 1] == '\n')
-    {
-        (command)[command_len - 1] = '\0';
-        command_len--;
-    }
+        // gets next line
+        printf("ccsh> ");
+        getline(&command, &bufsize, stdin);
 
-    // main while loop for shell
-    while (strcmp(command, "exit") != 0) {
 
-        // TODO: 1. check for special commands using if, else if, else (special commands: cd, path)
+        // constructs args[]
+        int argc = getWordCount(command);
+        char *args[argc];
+
+        char *arg = strtok (command, " \t\n");
+        for (int i = 0; i < argc; i++) {
+            args[i] = arg;
+            arg = strtok (NULL, " \t\n");
+        }
+
+
+        // check for built in commands
+        if (strcmp(args[0], "exit") == 0) {
+            break;
+        }
+
+
+
+        // TODO: 1. check for built in commands using if, else if, else (commands: exit, cd, path)
         //       2. figure out how to get args[0] = program path
         //       3. fork()
         //       4. inside child: execv(path, args);
         //       4. inside parent: wait(NULL);
-        //       5. prompt for new command
-        //       6. separate command into *args[] using strsep()
+
+
 
         // // taken from hw3 example
         // int child_pid = fork();
@@ -70,17 +106,8 @@ void interactiveMode() {
         //
         // }
 
-        printf("your command was: %s\n", command);
+        printf("your program was: %s\n", args[0]);
 
-
-        // gets next line and removes newline character at end of string
-        printf("ccsh> ");
-        command_len = getline(&command, &bufsize, stdin);
-        if ((command)[command_len - 1] == '\n')
-        {
-            (command)[command_len - 1] = '\0';
-            command_len--;
-        }
     }
 
     printf("you exited!\n");
