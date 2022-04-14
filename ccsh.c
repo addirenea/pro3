@@ -38,6 +38,8 @@ void batchMode() {
 
 void interactiveMode() {
 
+    // TODO: figure out how to clear terminal screen
+
     size_t bufsize = 256;
     char *command = (char *)malloc(bufsize * sizeof(char));
 
@@ -114,15 +116,14 @@ void interactiveMode() {
     free(command);
 }
 
+
 int main(int argc, char *argv[]) {
 
     if (argc == 1) { interactiveMode(); }
 
     else if (argc == 2) { batchMode(); }
 
-    else {
-        exit(1);
-    }
+    else { exit(1); }
 
     exit(0);
 }
