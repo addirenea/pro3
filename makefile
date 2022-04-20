@@ -1,9 +1,10 @@
-TARGETS=ccsh
+OBJFILES = helpers.o main.o
+TARGET   = ccsh
 
-all: $(TARGETS)
+all: $(TARGET)
+
+$(TARGET): $(OBJFILES)
+	gcc -Wall -g -o $(TARGET) $(OBJFILES)
 
 clean:
-	rm $(TARGETS)
-
-% : %.c
-	gcc -Wall -g -o $@ $<
+	rm -f $(OBJFILES) $(TARGET) *~
