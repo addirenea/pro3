@@ -8,6 +8,9 @@
 #include <unistd.h>
 
 
+char *paths[500];
+int numOfPaths=0;
+
 void batchMode() {
 
     printf("batch mode under construction \n");
@@ -19,14 +22,15 @@ void interactiveMode() {
 
     // TODO: figure out how to clear terminal screen
 
-    // TODO: 1. check for built in commands using if, else if, else (commands: exit, cd, path)
-    //       2. figure out how to get args[0] = program path
-    //       3. fork()
-    //       4. inside child: execv(path, args);
-    //       4. inside parent: wait(NULL);
-
     size_t bufsize = 256;
     char *command = (char *)malloc(bufsize * sizeof(char));
+
+    paths[0] = "/bin"; //NEW
+    numOfPaths = 1;
+
+
+
+
 
     while (1) {
 
@@ -37,9 +41,10 @@ void interactiveMode() {
         getline(&command, &bufsize, stdin);
 
 
+
         // constructs args[]
         int argc = getWordCount(command);
-        char *args[argc];
+        char *args[argc + 1];
 
         char *arg = strtok (command, " \t\n");
         for (int i = 0; i < argc; i++) {
@@ -47,25 +52,52 @@ void interactiveMode() {
             arg = strtok (NULL, " \t\n");
         }
 
+        args[argc] = NULL;
+
+
 
         // check for built in commands
-        if (strcmp(args[0], "exit") == 0) { break; }
+        if (strcmp(args[0], "exit") == 0) {
+            break;
+        }
 
         else if (strcmp(args[0], "cd") == 0) {
 
-            // if (argc != 1) {
-            //     errorOccurred();
-            // } else {
-            //     if (chdir(args[1]) == -1) { errorOccurred(); }
-            // };
+            char dirpath[1000];
 
-            printf("built in: cd\n");
+            if (argc <= 1 || chdir(args[1]) != 0) {
+                errorOccurred();
+            }
+
+            else {
+                printf("cwd: %s\n", getcwd(dirpath, 1000));
+            }
 
         }
 
         else if (strcmp(args[0], "path") == 0) {
 
-            printf("built in: path\n");
+
+            // its being weird and mean :(
+            
+            for (int i = 0; i < numOfPaths; i++) {
+                printf("%s\n", paths[i]);
+            }
+
+
+
+            numOfPaths = argc - 1;
+            for (int i = 0; i < numOfPaths; i++) {
+                paths[i] = args[i + 1];
+            }
+
+
+
+            printf("new path: \n");
+            for (int i = 0; i < numOfPaths; i++) {
+                printf("%s\n", paths[i]);
+            }
+
 
         }
 
@@ -73,31 +105,15 @@ void interactiveMode() {
 
             int child_pid = fork();
 
-            if (child_pid != 0) { wait(NULL); } // parent runs
+            // parent runs
+            if (child_pid != 0) {
+                wait(NULL);
+            }
 
-            else { // child runs
+            // child runs
+            else {
 
-                // COMMENT: dont think we need this commented block of code
-
-                // printf("<%d>: In child after fork\n", getpid());
-
-                // Copy the arguments
-
-                // char *child_args[argc];
-                //
-                // TODO // swap to what ever the commands are rather than current args
-                // for (int i = 1; i < argc; i++)
-                //     child_args[i-1] = argv[i];
-                // child_args[argc-1] = NULL;
-
-
-                // printf("<%d>: In child after exec\n", getpid());
-
-                printf("inside child - your program was: %s\n", args[0]);
-
-                // int rc = execvp(args[0], args);
-
-                // if (rc != 0) { errorOccurred(); }
+                execCommand(args, paths, numOfPaths);
 
                 break;
 
@@ -113,11 +129,17 @@ void interactiveMode() {
 
 int main(int argc, char *argv[]) {
 
-    if (argc == 1) { interactiveMode(); }
+    if (argc == 1) {
+        interactiveMode();
+    }
 
-    else if (argc == 2) { batchMode(); }
+    else if (argc == 2) {
+        batchMode();
+    }
 
-    else { exit(1); }
+    else {
+        exit(1);
+    }
 
     exit(0);
 }
