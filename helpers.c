@@ -14,6 +14,21 @@ void errorOccurred() {
 }
 
 
+void clearScreen() {
+
+    if (fork() == 0) {
+
+        char *start[] = {"clear"};
+        int rc = execv("/bin/clear", start);
+        if (rc != 0) {
+            errorOccurred();
+        }
+
+    }
+
+}
+
+
 // word count function from project 2
 int getWordCount(char *str) {
 
@@ -41,11 +56,29 @@ int getWordCount(char *str) {
 }
 
 
+int getCmdCount(char *str) {
 
-void execCommand(char** args, char *paths[500], int numOfPaths) {
+    int cc = 1;
+
+    // loops through all charaters in str
+    while (*str)
+    {
+        // checks if character is &
+        if (*str == '&')
+            cc++;
+
+        str++;
+    }
+
+    return cc;
+}
+
+
+// NOTE: execCommand terminates process that runs it! MUST fork to call it!
+void execCommand(char** args, char *paths[500], int pathsc) {
 
     // loops through all path starts in paths[]
-    for (int i = 0; i < numOfPaths; i++) {
+    for (int i = 0; i < pathsc; i++) {
 
         // contruct full path
         char path[strlen(paths[i]) + 1 + strlen(args[0])];
@@ -53,11 +86,18 @@ void execCommand(char** args, char *paths[500], int numOfPaths) {
         strcat(path, "/");
         strcat(path, args[0]);
 
+
         // executes and returns if file found
         if (access(path, X_OK) == 0) {
 
             int rc = execv(path, args);
-            if (rc != 0) { errorOccurred(); }
+
+            if (rc != 0) {
+
+                errorOccurred();
+
+            }
+
             return;
         }
     }

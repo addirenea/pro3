@@ -8,9 +8,6 @@
 #include <unistd.h>
 
 
-char *paths[500];
-int numOfPaths=0;
-
 void batchMode() {
 
     printf("batch mode under construction \n");
@@ -20,110 +17,158 @@ void batchMode() {
 
 void interactiveMode() {
 
-    // TODO: figure out how to clear terminal screen
+    char *paths[500];
+    paths[0] = "/bin";
+    int pathsc = 1;
 
-    size_t bufsize = 256;
-    char *command = (char *)malloc(bufsize * sizeof(char));
+    // clearScreen();
 
-    paths[0] = "/bin"; //NEW
-    numOfPaths = 1;
-
-
-
+    size_t bufsize = 512;
+    char *input = (char *)malloc(bufsize * sizeof(char));
 
 
     while (1) {
 
-        // gets next line
-        printf("\033[1;35m"); // makes text purple!!
+        // gets next line of input
+        printf("\033[1;35m");
         printf("ccsh> ");
         printf("\033[0m");
-        getline(&command, &bufsize, stdin);
+        getline(&input, &bufsize, stdin);
+        // IDEA: i think that for batch mode we would just need to tweak here
+        // where is says stdin for getline
 
 
+        // split input into seperate command prompts
+        int cmdc = getCmdCount(input);
+        char *commands[cmdc];
 
-        // constructs args[]
-        int argc = getWordCount(command);
-        char *args[argc + 1];
+        char *tmp_cmd = strtok (input, "&");
+        for (int i = 0; i < cmdc; i++) {
 
-        char *arg = strtok (command, " \t\n");
-        for (int i = 0; i < argc; i++) {
-            args[i] = arg;
-            arg = strtok (NULL, " \t\n");
+            commands[i] = tmp_cmd;
+            tmp_cmd = strtok (NULL, "&");
+
         }
 
-        args[argc] = NULL;
+
+        // for each command...
+        pid_t child_pid;
+
+        for (int i = 0; i < cmdc; i++) {
+
+            // construct args[]
+            int argc = getWordCount(commands[i]);
+            char *args[argc + 1];
+
+            char *arg = strtok (commands[i], " \t\n");
+            for (int i = 0; i < argc; i++) {
+
+                args[i] = arg;
+                arg = strtok (NULL, " \t\n");
+
+            }
+
+            args[argc] = NULL;
 
 
 
-        // check for built in commands
-        if (strcmp(args[0], "exit") == 0) {
-            break;
-        }
+            // check for built in commands
+            if (strcmp(args[0], "exit") == 0) {
 
-        else if (strcmp(args[0], "cd") == 0) {
+                exit(0);
 
-            char dirpath[1000];
+            }
 
-            if (argc <= 1 || chdir(args[1]) != 0) {
-                errorOccurred();
+            else if (strcmp(args[0], "cd") == 0) {
+
+                char dirpath[1000];
+
+                if (argc <= 1 || chdir(args[1]) != 0) {
+                    errorOccurred();
+                }
+
+                else {
+                    printf("cwd: %s\n", getcwd(dirpath, 1000));
+                }
+
+            }
+
+            // PATH UNDER CONSTRUCTION
+            else if (strcmp(args[0], "path") == 0) {
+
+                pathsc = argc - 1;
+
+                for (int i = 0; i < pathsc; i++) {
+
+                    // printf("replacing [%s] at i = %d with [%s]\n", paths[i], i, args[i+1]);
+                    printf("top of for loop, i = %d\n", i);
+
+                    char temp[strlen(args[i + 1])];
+                    strcpy(temp, args[i + 1]);
+
+                    printf("after init, [%s]\n", temp);
+                    // strcpy(paths[i], temp);
+                    paths[i] = temp;
+
+                    printf("after copy\n");
+                    printf("at i = %d, [%s]\n", i, paths[i]);
+
+
+                }
+
+
+
+                printf("new path: \n");
+                for (int i = 0; i < pathsc; i++) {
+                    printf("[%s]\n", paths[i]);
+                }
+                paths[pathsc] = NULL;
+
+
+            }
+
+            // FOR TESTING PURPOSES, REMOVE BEFORE SUBMISSION
+            else if (strcmp(args[0], "seepath") == 0) {
+
+                for (int i = 0; i < pathsc; i++) {
+
+                    printf("[%s]\n", paths[i]);
+
+                }
+
             }
 
             else {
-                printf("cwd: %s\n", getcwd(dirpath, 1000));
-            }
 
-        }
+                child_pid = fork();
 
-        else if (strcmp(args[0], "path") == 0) {
+                // child runs command
+                if (child_pid == 0) {
 
+                    execCommand(args, paths, pathsc);
 
-            // its being weird and mean :(
-            
-            for (int i = 0; i < numOfPaths; i++) {
-                printf("%s\n", paths[i]);
-            }
+                }
 
+                // error forking
+                else if (child_pid < 0) {
 
+                    errorOccurred();
 
-            numOfPaths = argc - 1;
-            for (int i = 0; i < numOfPaths; i++) {
-                paths[i] = args[i + 1];
-            }
-
-
-
-            printf("new path: \n");
-            for (int i = 0; i < numOfPaths; i++) {
-                printf("%s\n", paths[i]);
-            }
-
-
-        }
-
-        else {
-
-            int child_pid = fork();
-
-            // parent runs
-            if (child_pid != 0) {
-                wait(NULL);
-            }
-
-            // child runs
-            else {
-
-                execCommand(args, paths, numOfPaths);
-
-                break;
+                }
 
             }
 
         }
+
+        // parent waits for all children processes to finish
+        pid_t wait_pid;
+        int status = 0;
+        while ((wait_pid = wait(&status)) > 0);
 
     }
 
-    free(command);
+    free(input);
+
 }
 
 
