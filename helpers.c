@@ -4,27 +4,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 void errorOccurred() {
 
     char error_message[30] = "An error has occurred\n";
     write(STDERR_FILENO, error_message, strlen(error_message));
-
-}
-
-
-void clearScreen() {
-
-    if (fork() == 0) {
-
-        char *start[] = {"clear"};
-        int rc = execv("/bin/clear", start);
-        if (rc != 0) {
-            errorOccurred();
-        }
-
-    }
 
 }
 
@@ -58,12 +44,13 @@ int getWordCount(char *str) {
 
 int getCmdCount(char *str) {
 
+    // initalize command counter to 1
     int cc = 1;
 
     // loops through all charaters in str
     while (*str)
     {
-        // checks if character is &
+        // if char = &, command counter increases by 1
         if (*str == '&')
             cc++;
 
@@ -75,7 +62,7 @@ int getCmdCount(char *str) {
 
 
 // NOTE: execCommand terminates process that runs it! MUST fork to call it!
-void execCommand(char** args, char *paths[500], int pathsc) {
+void execCommand(char** args, char paths[][1024], int pathsc) {
 
     // loops through all path starts in paths[]
     for (int i = 0; i < pathsc; i++) {
